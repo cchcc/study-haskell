@@ -6,4 +6,6 @@ cabal-version:     >= 1.2
 executable study-haskell
   main-is:         Main.hs
   hs-source-dirs:  src
+                   src/Learnyouahaskell/
   build-depends:   base
+
