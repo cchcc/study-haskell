@@ -1,7 +1,7 @@
 module Learnyouahaskell.C04_SyntaxInFunctions where
 
 --
--- Syntax in Functions  http://learnyouahaskell.com/syntax-in-functions
+-- 04. Syntax in Functions  http://learnyouahaskell.com/syntax-in-functions
 --
 
 factorial :: (Integral a) => a -> a

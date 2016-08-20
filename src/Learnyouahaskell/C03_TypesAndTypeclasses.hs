@@ -1,6 +1,5 @@
 module Learnyouahaskell.C03_TypesAndTypeclasses where
 
-
 --
 -- 03. Types and Typeclasses http://learnyouahaskell.com/types-and-typeclasses
 --
