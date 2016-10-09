@@ -1,0 +1,2 @@
+module Learnyouahaskell.C06_HigherOrderFunctions where
+

@@ -48,10 +48,10 @@ sel2 (_,x,_) = x    -- _ 는 신경안쓰겠다는 의미
 
 bmiTell :: (RealFloat a) => a -> String
 bmiTell bmi
-    | bmi <= 18.5 = "You're underweight, you emo, you!"
+    | bmi <= 18.5 = "You're underweight, you emo, you!" -- guard. 패턴매칭 조건을 테스팅함 | 하나에 하나씩
     | bmi <= 25.0 = "You're supposedly normal. Pffft, I bet you're ugly!"
     | bmi <= 30.0 = "You're fat! Lose some weight, fatty!"
-    | otherwise   = "You're a whale, congratulations!"
+    | otherwise   = "You're a whale, congratulations!"  -- 조건의 나머지 모든 경우는 otherwisw
 --main = print (bmiTell 10.1)
 
 --bmiTell :: (RealFloat a) => a -> a -> String    -- 컴팔에러! 함수명이 동일하고 함수의 타입이 틀려도 같은 함수 시그니쳐로 인식함
@@ -87,7 +87,7 @@ cylinder r h =
 --                   pattern -> result
 --                   ...
 describeList :: [a] -> String
-describeList xs = "The list is " ++ case xs of [] -> "empty."
+describeList xs = "The list is " ++ case xs of [] -> "empty."   -- 패턴매칭과 다르점은 이 구문 자체가 expression, evaluation 됨
                                                [x] -> "a singleton list."
                                                xs -> "a longer list."
 --main = print (describeList "a")

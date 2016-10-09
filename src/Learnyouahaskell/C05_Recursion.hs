@@ -32,6 +32,6 @@ takeLast n list = takeLast (n-1) (init list) ++ (last' list):[]      -- 방법 #
 
 qsort :: (Ord a) => [a] -> [a]
 qsort [] = []
-qsort (x:xs) = qsort [ s | s <- xs, s<x] ++ [x] ++ qsort [ l | l <- xs, l>=x]
+qsort (x:xs) = qsort [ s | s <- xs, s<x] ++ [x] ++ qsort [ l | l <- xs, l>=x]   -- 퀵소트가 2줄 대박!
 --main = print(qsort "sdifjiejfnawef")
 --main = print(qsort [5,1,-59,1,5,23,-55,1])
