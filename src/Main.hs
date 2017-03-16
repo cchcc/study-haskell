@@ -52,5 +52,4 @@ funs = map (*) [0..]  -- 이건 리턴이 함수들의 리스트임 [(0*),(1*),(
 --main = print ( (funs !! 3) 4)  -- (3*) 4
 
 
---main = print "hello world"
-
+main = print "hello world"

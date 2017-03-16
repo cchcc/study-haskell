@@ -4,7 +4,7 @@ module Learnyouahaskell.C02_StartingOut where  -- 모듈명은 첫글자 소문�
 -- 02. Starting Out http://learnyouahaskell.com/starting-out
 --
 
---main = do   -- 이거 함수 하나에서 여러줄 쓸때 씀
+-- main = do   -- 이거 함수 하나에서 여러줄 쓸때 씀
 --    print (3 == 3)
 --    print (3 /= 3)      -- 하스켈에서 not 은 /=
 
@@ -13,14 +13,17 @@ module Learnyouahaskell.C02_StartingOut where  -- 모듈명은 첫글자 소문�
 --main = print (DoubleMe 8)
 
 
---conanO'Brien = "It's a-me, Conan O'Brien!"  -- 함수명에 ' apostrophe(작은따옴표) 이거는 그냥 일반문자취급함.
+conanO'Brien = "It's a-me, Conan O'Brien!"  -- 함수명에 ' apostrophe(작은따옴표) 이거는 그냥 일반문자취급함.
 --main = print (conanO'Brien)
 -- 주로 원본함수가 있으면 그거를 뭔가 살짝바꿧다는 의미로 원본함수명 뒤에 붙여서 사용함 예를들면
---hi = print "hi"
---hi' = print "hi!"  -- hi 함수를 살짝 바꿧다
+hi = print "hi"
+hi' = print "hi!"  -- hi 함수를 살짝 바꿧다
 --main = do
 --    hi
 --    hi'
+
+-- if 문도 하나의 평가식
+doubleSmallNumber x = if x > 100 then x else x*2
 
 -- lists are a homogenous data structure
 -- 호모... 호모지녀스? 이게 뭔말이냐면 리스트안에 들어가는 모든 항목은 동일한 타입이라는 말임
@@ -60,7 +63,7 @@ module Learnyouahaskell.C02_StartingOut where  -- 모듈명은 첫글자 소문�
 --main = print ([ (a,b,c) | c <- [1..10], b <- [1..c], a <- [1..b], a^2 + b^2 == c^2])  -- 각변의 길이가 10이하인 직각 삼각형들
 
 
---length' xs = sum [1 | _ <- xs]      -- _ 이거는 뭐가됬던 신경 안쓰겠다는 의미
+length' xs = sum [1 | _ <- xs]      -- _ 이거는 뭐가됬던 신경 안쓰겠다는 의미
 --main = print (length' [1,2,3])
 --main = print ([ 1 | _ <- _])    -- 컴팔에러!  앰비겨스 타입. _ 얘는 타입이 [t0] 이라고 나오는데 이게 뭐임??
 

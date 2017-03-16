@@ -18,3 +18,8 @@
 
 `cabal` 을 이용함  
 <https://wiki.haskell.org/How_to_write_a_Haskell_program#Structure_of_a_simple_project>  
+
+
+### Setting for Atom
+
+Install package :  [language-haskell](https://atom.io/packages/language-haskell), [script](https://atom.io/packages/script)

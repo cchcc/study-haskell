@@ -87,7 +87,8 @@ cylinder r h =
 --                   pattern -> result
 --                   ...
 describeList :: [a] -> String
-describeList xs = "The list is " ++ case xs of [] -> "empty."   -- 패턴매칭과 다르점은 이 구문 자체가 expression, evaluation 됨
-                                               [x] -> "a singleton list."
+describeList xs = "The list is " ++ case xs of [] -> "empty."   -- 패턴매칭과 다른점은 이 구문 자체가 expression, evaluation 됨
+                                               [x] -> "a singleton list. : "
                                                xs -> "a longer list."
---main = print (describeList "a")
+
+main = print (describeList "a")

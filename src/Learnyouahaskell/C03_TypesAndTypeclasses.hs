@@ -11,14 +11,14 @@ addThree :: Int -> Int -> Int -> Int    -- 함수의 타입 선언부. 함수도
 addThree x y z = x + y + z
 
 
-head' :: [a] -> a   -- type variable. 모든타입이 가능함을 의미. type variable이 있는 함수를 polymorphic function 이라 함.
+head' :: [a] -> a   -- type variable. 모든(혹은 제한된)타입이 가능함을 의미. type variable이 있는 함수를 polymorphic function 이라 함.
 head' (x:_) = x
 --main = print( head' [1,2,3] )
 
 
 -- typeclass. 뭔가 타입이 어떤 특정형태 기능구현이 되있음을 명시. interface 비슷
 -- (==) :: (Eq a) => a -> a -> Bool
--- 여기서 (Eq a) 이부분을 class constraint 라 함. , 로 구분해서 여러개 가능
+-- 여기서 '(Eq a) =>' 이부분을 a에 대한 class constraint 라 함. , 로 구분해서 여러개 가능
 
 
 --main = print (read "3")     -- 컴팔 에러! 앰비겨스 타입. read 의 리턴 타입이 type variable 인데 "3" 을 뭘로 변환할지 모름.
