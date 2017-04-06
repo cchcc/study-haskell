@@ -6,7 +6,7 @@ module Learnyouahaskell.C05_Recursion where
 
 sum' [] = 0     -- edge condtion(or edge case) 재귀 탈출 조건(일반적으로 인풋의 조건이 말이안되는 시점)
 sum' (x:xs) = x + sum' xs
---main = print (sum' [1,2,3])
+-- main = print (sum' [1,2,3])
 
 --sum'' :: (Num a) => [a] -> String     -- 이렇게만 하면 show :: Show a => a -> String 라 안됨
 sum'' :: (Num a, Show a) => [a] -> String

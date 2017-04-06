@@ -72,23 +72,28 @@ initials firstname lastname = [f] ++ ". " ++ [l] ++ "."
 --initials (f:_) (l:_) = [f] ++ ". " ++ [l] ++ "."
 --main = print (initials "123" "asdf")
 
-
 cylinder :: (RealFloat a) => a -> a -> a
 cylinder r h =
     let sideArea = 2 * pi * r * h
         topArea = pi * r ^2
     in  sideArea + 2 * topArea      -- let <bindings> in <expression> : let 바인딩 구문을 in 영역에서 사용
 --where 바인딩은 함수내에서 사용, let 바인딩은 함수내 뿐만 아니라 거의 모든 구문에서 사용가능함
---main = print [let square x = x * x in (square 5, square 3, square 2)]
 
+-- list comprehension 에서 사용해보기
+-- main = print [let square x = x * x in (square 5, square 3, square 2)]
+-- main = print [plus1 x | x <- [1..5], let plus1 a = a + 1]
+
+-- main = do
+  -- let plus1 x = x +1  -- 이렇게는 안됨
+  -- print plus1 1
 
 --case expression of pattern -> result
---                   pattern -> result
---                   pattern -> result
 --                   ...
+-- 런타임에서 해당 case 가 없으면 에러남.. 모든 case 를 서술할것.
 describeList :: [a] -> String
 describeList xs = "The list is " ++ case xs of [] -> "empty."   -- 패턴매칭과 다른점은 이 구문 자체가 expression, evaluation 됨
-                                               [x] -> "a singleton list. : "
-                                               xs -> "a longer list."
+                                               [x] -> "a singleton list. : " ++ show 1
+                                               xs -> "a longer list. : "
 
-main = print (describeList "a")
+
+-- main = print (describeList "a")
