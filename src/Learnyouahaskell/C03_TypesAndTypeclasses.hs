@@ -7,6 +7,7 @@ module Learnyouahaskell.C03_TypesAndTypeclasses where
 
 -- Haskell has static type system and type inference.
 
+-- type declaration 함수명 :: 타입 선언
 addThree :: Int -> Int -> Int -> Int    -- 함수의 타입 선언부. 함수도 타입이 있음. addThree 의 타입은 Int -> Int -> Int -> Int
 addThree x y z = x + y + z
 
@@ -22,7 +23,7 @@ head' (x:_) = x
 
 
 --main = print (read "3")     -- 컴팔 에러! 앰비겨스 타입. read 의 리턴 타입이 type variable 인데 "3" 을 뭘로 변환할지 모름.
---main = print (read "3"::Int)  -- 리턴값의 타입이 Int임을 명시함. type annotation
+--main = print (read "3"::Int)  -- 리턴값의 타입이 Int임을 명시함. type annotation. typedeclaration 과 똑같이 :: 를 사용
 --main = print ([ 1 | _ <- _::[Char]])    -- 이건 이래도 안되네 ㅋ
 
 -- Num typeclass 는 숫자형(Int, Integer, Float, Double)의 상위 typclass 임(has)
