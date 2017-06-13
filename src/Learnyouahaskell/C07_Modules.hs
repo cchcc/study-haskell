@@ -28,7 +28,7 @@ import qualified Data.Function as DF
 import qualified Data.Char as DC
 import qualified Data.Map as DM -- 이거하면 Data.List 도 import 됨
 import qualified Data.Set as DS -- 이거하면 Data.List 도 import 됨
-import qualified MyModule as MM
+-- import qualified MyModule as MM
 
 main = do
 

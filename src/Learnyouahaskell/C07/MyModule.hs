@@ -6,8 +6,8 @@ module MyModule (
 plus :: (Num a) => a -> a -> a
 plus = (+)
 
-hello :: () -> IO()
+-- hello :: () -> IO()
 hello = print "hello"
 
-hi :: () -> IO()
+-- hi :: () -> IO()
 hi = print "hi"

@@ -28,4 +28,4 @@ module Main where
 
 
 
-main = print $
+main = print "Hello World"
