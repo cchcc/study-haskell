@@ -92,7 +92,7 @@ instance YesNo [a] where  -- [a] 에 YesNo 타입클래스를 구현함.
   -- print $ yes ""
 
 
--- functor typeclass. data 선언하면서 만드는 생성자도 함수이므로 data declaration 을 함수처럼 이용
+-- functor typeclass.
 class Funct f where  -- class Functor (f :: * -> *) where
   fmap1 :: (a -> b) -> f a -> f b  -- f 의 타입은 함수(생성자)이고 f a 는 a 에 f 를 적용한 거임
 -- (a -> b) 는 그냥 함수 파라매터.   f a 는 (타입 변수 하나를 받는)타입 생성자

@@ -25,7 +25,8 @@ module Main where
 -- record syntax : data 선언시 필드에 이름을 지정해주는 방법.
 -- type constructors : data 를 만들때 타입을 받는 생성자
 -- type synonyms : 똑같은 type 이 이름이 여러개 있는것.  ex) type String = [Char]
-
+-- function composition : (.) (g . f) v
+-- functor : 뭔가 감싸져 있는 상태(box)에서 매핑이 되도록 해줌. computaional context
 
 
 main = print "Hello World"
