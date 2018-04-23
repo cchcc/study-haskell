@@ -71,22 +71,30 @@ data List2 a = Empty2 | a :! (List2 a) deriving (Eq, Ord, Read, Show)  -- 우측
 -- main = print $ 1 :! 2 :! Empty2
 
 -- typeclass. type 을 만들어내기 위한 기본 틀.  typeclass 를 인스턴스화 하면 type instance 가 됨.
+
+-- 클래스 선언시 타입 제약 : 개념상 서브클래스를 만드는 방법임
+-- class (Eq a) => Num a where
+-- 인스턴스 선언시 타입제약 : Maybe 가 같은지 비교하려면 a 도 비교가 가능해야함. a 의 필수적인 요소를 명시.
+-- 함수의 타입은 concrete 해야함. 따라서 class Eq Maybe 이런건 안되고, class Eq (Maybe a) 이런건 됨
+-- instance (Eq a) => Eq (Maybe a) where
+
+
 class YesNo t where
   yesno :: t -> Prelude.Bool  -- 얘는 함수 선언만 하고 구현은 instance 에서
   yes :: t -> Prelude.Bool  -- 함수 선언과 구현도 같이
   yes _ = Prelude.True
+
+instance YesNo Int where
+  yesno 0 = Prelude.False
+  yesno _ = Prelude.True
 
 instance YesNo [a] where  -- [a] 에 YesNo 타입클래스를 구현함.
   yesno [] = Prelude.False
   yesno _ = Prelude.True
   -- yes _ = Prelude.False  -- typeclass 에서 구현이 있더라로 instance 에서 구현가능
 
--- 클래스 선언시 타입 제약 : 개념상 서브클래스를 만드는 방법임
--- class (Eq a) => Num a where
--- 인스턴스 선언시 타입제약 : Maybe 가 같은지 비교하려면 a 도 비교가 가능해야함. a 의 필수적인 요소를 명시.
--- instance (Eq a) => Eq (Maybe a) where
-
 -- main = do
+  -- print $ yesno (1::Int)
   -- print $ yesno ""
   -- print $ yesno "1"
   -- print $ yes ""
@@ -100,8 +108,8 @@ class Funct f where  -- class Functor (f :: * -> *) where
 instance Funct [] where   -- [] 는 type variable 하나를 받는 리스트 생성자, 즉 함수임
   -- fmap1 f [] = []  -- #1
   -- fmap1 f (x:xs) = (f x):fmap f xs
-  -- fmap1 f xs = foldr (\x acc -> (f x):acc) [] xs  -- #2
-  fmap1 = map  -- #3
+  fmap1 f xs = foldr (\x acc -> (f x):acc) [] xs  -- #2
+  -- fmap1 = map  -- #3
 
 -- main = print $ fmap1 (+1) [1,2,3]
 
@@ -116,6 +124,8 @@ instance Funct (Either a) where  -- f 는 타입 파라매터 하나만 받는�
 -- Int 는 * 인 kind 를 가짐
 -- Maybe a 는 * -> * 인 kind 를 가짐
 -- Maybe Int 는 * 인 kind 를 가짐 (타입 파라매터를 Int 로 실체화)
+-- data 가 아닌 type 인경우 Constraint 로 표현
+-- Num a 는 * -> Constraint
 
 class Tofu t where
   tofu :: j a -> t a j

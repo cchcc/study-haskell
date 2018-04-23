@@ -26,7 +26,14 @@ module Main where
 -- type constructors : data 를 만들때 타입을 받는 생성자
 -- type synonyms : 똑같은 type 이 이름이 여러개 있는것.  ex) type String = [Char]
 -- function composition : (.) (g . f) v
+-- type is concrete : 어떤 타입이 확정됨을 말함.
 -- functor : 뭔가 감싸져 있는 상태(box)에서 매핑이 되도록 해줌. computaional context
+
+-- ghci
+-- :info  : 해당 타입이 어떤 타입클래스가 구현되있는지
+-- :t  : 해당 값의 타입이 뭔지
+-- :k  : 해당 타입(data) 또는 타입클래스(type)의 kind 가 뭔지
+
 
 
 main = print "Hello World"
