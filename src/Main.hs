@@ -34,6 +34,10 @@ module Main where
 -- :t  : 해당 값의 타입이 뭔지
 -- :k  : 해당 타입(data) 또는 타입클래스(type)의 kind 가 뭔지
 
+-- compile 후 실행 파일 만들기
+-- ghc --make filename.hs
+-- 바로 실행하기
+-- runhaskell filename.hs
 
 
 main = print "Hello World"

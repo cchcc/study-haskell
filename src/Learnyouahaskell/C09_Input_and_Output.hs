@@ -8,7 +8,7 @@ module Learnyouahaskell.C09_Input_and_Output where
 -- I/O action 은 main 에서만 동작함. main 역시 I/O action 임
 
 import Control.Monad
-import System.Random
+import System.Random  -- 설치 필요 : cabal install random
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import Control.Exception
@@ -28,6 +28,11 @@ main = do  -- do block 역시 I/O action
   mapM print [1,2,3]  -- sequence 동작과 동일
   mapM_ print [1,2,3]  -- mapM 와 동일하나 ghci 에서 마지막에 자신에 대한 I/O 는 리턴안함
 
+  let a1 = "a1"
+      a2 = "a2" -- let binding 은 do 구문 안에서도 자유롭게 사용가능하나 여러개 쓸경우 들여쓰기 맞춰줘야함
+  putStrLn abc
+  putStrLn asdf
+
   -- forever $ do  -- I/O action을 하나 받아서 하나 리턴, 반복
   -- putStr "input>"
   -- line <- getLine
@@ -40,7 +45,7 @@ main = do  -- do block 역시 I/O action
   print $ take 10 (randoms gen :: [Int])
   print $ take 10 (randomRs (1,10) gen :: [Int]) -- 랜덤의 범위를 지정해줄때
   print $ take 10 (randomRs (1,10) gen :: [Int])
-  gen' <- newStdGen  
+  gen' <- newStdGen
   print $ take 10 (randomRs (1,10) gen' :: [Int])
   print $ take 10 (randomRs (1,10) gen' :: [Int])
 
