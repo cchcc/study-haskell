@@ -16,7 +16,10 @@ sequenceA' :: (Applicative f) => [f a] -> f [a]
 sequenceA' [] = pure []
 sequenceA' (x:xs) = (:) <$> x <*> sequenceA xs
 
-main = do
+newtype ZipList' a = ZipList' {getZipList' :: [a]} deriving (Show)
+
+part1::IO() -- functor, applicative functor
+part1 = do
     -- Functor 감싸져 있는 것(box)에 매핑을 하는것.(can be mapped over). computational context
     -- kind 는 (* -> *) -> Constraint 타입 파라매터로 * -> * 를 받음
 
@@ -77,6 +80,9 @@ main = do
     -- k <$> f <*> g 여기서 k,f,g 가 다 함수라고 한다면 이거의 의미는 어떤 값에 f 를 적용할 결과와 g 를 적용한 결과를 k 로 적용하는 함수를 만듬
     print $ (*) <$> (+10) <*> (subtract 10) $ 0  -- 여기서는 감싸고 있는 놈이 (Num a) => a -> b 적용할 놈이 (*)
 
+    -- <*> 는 앞 파라매터의 함수를 뒤 파라매터의 모든 값에 적용하는데
+    -- 이거를 앞 첫번째는 뒤 첫번째 앞 두번째는 뒤 두번째 처럼 적용하고 싶으면 ZipLit 를 사용(zipWith 함수와 비슷함)
+    print $ (+) <$> ZipList [1,2,3] <*> ZipList [100,100,100]
     print $ (,,) <$> ZipList "dog" <*> ZipList "cat" <*> ZipList "rat"  -- (,,) 이거는 원소 3개짜리 튜플을 만들어내는 함수
 
     -- liftA2 :: (Applicative f) => (a -> b -> c) -> f a -> f b -> f c -- 이거는 k <$> f <*> g 이거랑 동일
@@ -95,3 +101,45 @@ main = do
     print $ (:) <$> (+1) <*> ((:) <$> (+2) <*> sequenceA []) $ 3
     print $ (:) <$> (+1) <*> ((:) <$> (+2) <*> pure []) $ 3
     -- print $ (:) <$> (+1) <*> ((:) <$> (+2) <*> [) $ 3 -- 이거는 왜 안되는지 모르겟네...
+
+-- main = part1
+
+
+
+-- newtype
+-- data 를 정의할때 만약 단순히 타입을 한번 래핑하는 용도이면 data 보다 newtype 을 쓰는게 성능면에서 더 낫다.
+-- newtype 을 쓰려면 한개의 생성자에 한개의 필드만 사용가능하다
+-- newtype Race = Human | Elf | Orc | Goblin -- 이건 생성자가 4개라 안됨
+part2::IO() -- newtype
+part2 = do
+    -- ZipList 를 살펴보면 ZipList 는 [a] -> ZipList, getZipList 는 ZipList -> [a] 이런식으로 변환하는 개념으로 생각
+    -- 이런스타일로 하는게 newtype 의 관례인듯...
+    print $ ZipList' [1,2,3]  -- newtype ZipList' a = ZipList' {getZipList' :: [a]}
+    print $ getZipList' (ZipList' [1,2,3])
+
+-- main = part2
+
+-- newtype 용도 - type class instances 를 만들때 사용
+-- 만약 Functor (a,b) 이런식으로 튜플을 쓰고 싶은데 Functor 에 파라매터는 한개라 안됨
+-- 이럴땐 newtype 으로 래핑하는 단순한 새로운 타입을 만들어서 적용이 가능하다
+newtype Pair a b = Pair { getPair::(b, a) } deriving (Show)
+
+instance Functor (Pair a) where
+  fmap f (Pair (x, y)) = Pair (f x, y)
+
+-- main = print $ fmap (+1) (Pair (1, 'a'))
+
+-- newtype 특징 - 패턴매칭에서 lazy 처리 가능
+-- 이게 안되는 이유는 data 는 (CoolBool _) 패턴매칭이 되는지 보기위해 생성자 호출하면서 undefined 를 호출함 (파람으로 들어오는 undefined 까지 호출해봐야 패턴을 알수 있음)
+-- data CoolBool = CoolBool { getCoolBool :: Bool }
+-- 이게 되는 이유는 newtype 의 생성자와 필드는 한개로 고정됬음을 이미 알고 있음으로 걍 ㄱ
+newtype CoolBool = CoolBool { getCoolBool :: Bool }
+
+helloMe :: CoolBool -> String
+helloMe (CoolBool _) = "hello" -- newtype 값을 패턴매칭하면 값을 꺼내는게 아니라 직접적으로 교환하는
+
+-- main = print $ helloMe undefined
+
+-- type : 이건 그냥 동일한 타입인새 이름만 하나 더 생기는것. 가독성이나 개념상 좀더 명확하게 한다면 사용
+-- newtype : 기존 타입을 새로 타입을 만들어서 typeclass instance 를 만들고 싶다면(혹은 생성자,필드가 한개씩 밖에 없는거면) 이걸로 사용
+-- data : 그외 다른 일반적인 경우
