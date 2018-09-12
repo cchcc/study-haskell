@@ -4,7 +4,7 @@ module Learnyouahaskell.C11_Functors_Applicative_Functors_and_Monoids where
 -- 11. Functors, Applicative Functors and Monoids  http://learnyouahaskell.com/functors-applicative-functors-and-monoids
 --
 
-import Control.Applicative -- ZipList
+import Control.Applicative -- ZipList, lift2, sequenceA
 
 data CMaybe a = CNothing | CJust Int a deriving (Show)
 
@@ -30,11 +30,10 @@ part1 = do
     -- line <- fmap length getLine  -- IO 도 fmap 가능
     -- print line
 
-    -- -> 이거도 하나의 타입임 (->) t1 t2
-    -- Functor 에 (->) 이걸 부분적용하게 되면
-    -- fmap :: (a­ -> b) -­> ((­->) r a) -­> ((-­>) r b)
-    -- fmap :: (a­ -> b) -­> (r -> a) -­> (r -> b)  이건 (.) 이거와 동일함(function composition)
-    -- 즉 Functor 를 그냥 함수에다 적용하면 함수 합성 (.) 이 됨
+    -- 일반함수 r -> a 이거를 다시 써보면 (->) r a 이거임. 여기서 앞에 (->) r 이거만 따로 떼서 감싸져 있는것(박스)로 취급 가능함..!
+    -- fmap :: (a­ -> b) -­> ( (->) r a) -­> ( (-­>) r b)
+    -- fmap :: (a­ -> b) -­> (r -> a) -­> (r -> b) 위에걸 풀어보면, 이렇게 되는데 이건 (.) 와 동일함(function composition)
+    -- 즉 Functor 를 그냥 함수에다 적용하면 함수 합성 (.) 이 됨 (구현은 fmap f g = (\x -> f (g x)))
     print $ fmap (+1) (+100) 1
     -- 커링 관점에서 보면 (a -> b) -> (f a -> f b) -- lifing
 
@@ -67,35 +66,49 @@ part1 = do
     print $ pure (+3) <*> Just 5
     -- print $ (Just (+)) <*> Just 5
 
-    -- pure 를 좀더 살펴보면 pure f <*> x 와 fmap f x 는 같음거임
-    print $ pure (+) <*> Just 3 <*> Just 5
-    print $ fmap (+) (Just 3) <*> Just 5
-    print $ (+) <$> Just 3 <*> Just 5  -- 그리고 저기능을 하는 함수가 따로 있음 <$>
     -- pure 는 어떤 값을 하나 받아서 가장 기본(디폴트) 컨텍스트(박스)에 넣는 일을 한다. minimal context
     -- 여기서 말하는 가장 기본 컨텍스트는 그 결과가 '값이 없음' 은 아니다 (ex: Maybe 의 Nothing, List 의 [])
+    print $ pure (+) <*> Just 3 <*> Just 5
+    print $ fmap (+) (Just 3) <*> Just 5
 
+    -- fmap 의 축약형 infix 함수로서 <$> 가 있음 (<$> 의 구현 : f <$> x = fmap f x)
+    -- f a b c 비스무리하게 f 를 박싱된것에 연쇄적으로 적용한다는 의미로 f <$> a <*> b <*> c 요런식으로 표현 가능
+    print $ (+) <$> Just 3 <*> Just 5
+    
+    -- [] 의 Applicative 구현은 fs <*> xs = [f x | f <- fs, x <- xs] 임
     print $ [ x*y | x <- [2,5,10], y <- [8,10,11]]
     print $ (*) <$> [2,5,10] <*> [8,10,11] -- 위에 list comprehensions 과 같음
+    print $ filter (>50) $ (*) <$> [2,5,10] <*> [8,10,11]
+    print $ [(+),(*)] <*> [1,2] <*> [3,4]
 
-    -- k <$> f <*> g 여기서 k,f,g 가 다 함수라고 한다면 이거의 의미는 어떤 값에 f 를 적용할 결과와 g 를 적용한 결과를 k 로 적용하는 함수를 만듬
-    print $ (*) <$> (+10) <*> (subtract 10) $ 0  -- 여기서는 감싸고 있는 놈이 (Num a) => a -> b 적용할 놈이 (*)
+    -- IO 의 Applicative 구현은 <- 이걸로 꺼내서 f 적용후 return 으로 감쌈
+    -- a <*> b = do  
+    --   f <- a  
+    --   x <- b  
+    --   return (f x)
 
-    -- <*> 는 앞 파라매터의 함수를 뒤 파라매터의 모든 값에 적용하는데
-    -- 이거를 앞 첫번째는 뒤 첫번째 앞 두번째는 뒤 두번째 처럼 적용하고 싶으면 ZipLit 를 사용(zipWith 함수와 비슷함)
+    -- (->) r 의 Applicative 구현은 f <*> g = \x -> f x (g x)
+    print $ (+) <$> (+3) <*> (*100) $ 5
+    -- k <$> f <*> g 여기서 k,f,g 가 다 함수라고 한다면 이거의 의미는 어떤 값에 f 를 적용한 결과와 g 를 적용한 결과를 k 로 적용하는 함수를 만듬
+    print $ (*) <$> (+10) <*> (subtract 10) $ 0  -- 감싸고 있는 놈이 (Num a) => a -> b 적용할 놈이 (*)
+    -- 대충 (*) (\x -> x+10) (\x -> x-10) 이런형태에 x 에 0 이 들어감. (*) -10 10 즉, -10 * 10 
+    print $ (\x y z -> [x,y,z]) <$> (+3) <*> (*2) <*> (/2) $ 5
+
+    -- [] 의 Applicative 구현 <*> 는 앞 파라매터의 함수를 뒤 파라매터의 모든 값에 적용하는데
+    -- 이거를 앞 첫번째는 뒤 첫번째 앞 두번째는 뒤 두번째 처럼 적용하고 싶으면 ZipList 를 사용(zipWith 함수와 비슷함)
     print $ (+) <$> ZipList [1,2,3] <*> ZipList [100,100,100]
     print $ (,,) <$> ZipList "dog" <*> ZipList "cat" <*> ZipList "rat"  -- (,,) 이거는 원소 3개짜리 튜플을 만들어내는 함수
 
-    -- liftA2 :: (Applicative f) => (a -> b -> c) -> f a -> f b -> f c -- 이거는 k <$> f <*> g 이거랑 동일
+    -- liftA2 :: (Applicative f) => (a -> b -> c) -> f a -> f b -> f c -- 이거는 f <$> a <*> b 이거랑 동일
+    print $ liftA2 (+) (Just 1) (Just 2)  -- (+) <$> Just 3 <*> Just 5
     print $ (*) <$> (+10) <*> (subtract 10) $ 0
     print $ liftA2 (*) (+10) (subtract 10) $ 0
 
-    -- sequenceA :: (Applicative f) => [f a] -> f [a]  -- 이거는 foldr (:) (pure []) [f a] 이거랑 동일
-    print $ (:) <$> (Just 3) <*> (Just [4])
+    -- sequenceA :: (Applicative f) => [f a] -> f [a]
+    -- sequenceA [] = pure []  
+    -- sequenceA (x:xs) = (:) <$> x <*> sequenceA xs
     print $ sequenceA [Just 3, Just 4]
-
     print $ sequenceA [[1,2],[3,4]]  -- 이거를 쭉 풀어보면 (:) <$> [1,2] <*> ((:) <$> [3,4] <*> [[]])
-
-
     print $ sequenceA' [(+1),(+2)] $ 3  -- 타입은 sequenceA [(+1),(+2)] :: Num a => a -> [a]
     -- 쭉 풀어보면
     print $ (:) <$> (+1) <*> ((:) <$> (+2) <*> sequenceA []) $ 3
