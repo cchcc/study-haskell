@@ -86,6 +86,7 @@ part1 = do
     --   f <- a  
     --   x <- b  
     --   return (f x)
+    print $ (++) <$> getLine <*> getLine
 
     -- (->) r 의 Applicative 구현은 f <*> g = \x -> f x (g x)
     print $ (+) <$> (+3) <*> (*100) $ 5
@@ -105,15 +106,31 @@ part1 = do
     print $ liftA2 (*) (+10) (subtract 10) $ 0
 
     -- sequenceA :: (Applicative f) => [f a] -> f [a]
-    -- sequenceA [] = pure []  
+    -- sequenceA [] = pure []
     -- sequenceA (x:xs) = (:) <$> x <*> sequenceA xs
     print $ sequenceA [Just 3, Just 4]
-    print $ sequenceA [[1,2],[3,4]]  -- 이거를 쭉 풀어보면 (:) <$> [1,2] <*> ((:) <$> [3,4] <*> [[]])
-    print $ sequenceA' [(+1),(+2)] $ 3  -- 타입은 sequenceA [(+1),(+2)] :: Num a => a -> [a]
+    print $ sequenceA [Just 3, Nothing, Just 4]
+    
+    -- sequenceA 를 함수들의 리스트에다 사용할때, 똑같은 인풋 을 모든 함수에 적용해보는데 쓰면 유용함
+    print $ sequenceA [(+1),(+2)] 3  -- 타입은 sequenceA [(+1),(+2)] :: Num a => a -> [a]
     -- 쭉 풀어보면
     print $ (:) <$> (+1) <*> ((:) <$> (+2) <*> sequenceA []) $ 3
     print $ (:) <$> (+1) <*> ((:) <$> (+2) <*> pure []) $ 3
     -- print $ (:) <$> (+1) <*> ((:) <$> (+2) <*> []) $ 3 -- 이거는 왜 안되는지 모르겟네...
+    
+    -- sequenceA 를 리스트의 리스트([[]]) 에 사용하면 조합가능한 모든 원소들이 나옴
+    print $ sequenceA [[1,2],[3,4]]  -- 이거를 쭉 풀어보면 (:) <$> [1,2] <*> ((:) <$> [3,4] <*> [[]])
+    print $ sequenceA [[1,2],[3,4],[5,6],[7,8]]
+
+    -- sequenceA 를 IO 에 쓰면.. 그냥 [IO a] 가 IO [a] 됨
+    print $ sequenceA [getLine, getLine]
+
+    -- applicative functor law
+    -- pure f <*> x = fmap f x
+    -- pure id <*> v = v
+    -- pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
+    -- pure f <*> pure x = pure (f x)
+    -- u <*> pure y = pure ($ y) <*> u
 
 -- main = part1
 
