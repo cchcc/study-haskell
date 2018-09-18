@@ -5,6 +5,8 @@ module Learnyouahaskell.C11_Functors_Applicative_Functors_and_Monoids where
 --
 
 import Control.Applicative -- ZipList, lift2, sequenceA
+import qualified Data.Foldable as F
+-- import Data.Monoid
 
 data CMaybe a = CNothing | CJust Int a deriving (Show)
 
@@ -86,7 +88,7 @@ part1 = do
     --   f <- a  
     --   x <- b  
     --   return (f x)
-    print $ (++) <$> getLine <*> getLine
+    -- (++) <$> getLine <*> getLine
 
     -- (->) r 의 Applicative 구현은 f <*> g = \x -> f x (g x)
     print $ (+) <$> (+3) <*> (*100) $ 5
@@ -123,7 +125,7 @@ part1 = do
     print $ sequenceA [[1,2],[3,4],[5,6],[7,8]]
 
     -- sequenceA 를 IO 에 쓰면.. 그냥 [IO a] 가 IO [a] 됨
-    print $ sequenceA [getLine, getLine]
+    -- sequenceA [getLine, getLine]
 
     -- applicative functor law
     -- pure f <*> x = fmap f x
@@ -183,7 +185,7 @@ helloMe (CoolBool _) = "hello" -- newtype 값을 패턴매칭하면 값을 꺼�
 
 -- class Monoid m where -- 여기서 m 은 concreate type 이다
 --     mempty :: m   -- identity value
---     mappend :: m -> m -> m  -- binary function 여기에 뭘 할건지 구현
+--     mappend :: m -> m -> m  -- associative binary function 여기에 뭘 할건지 구현
 --     mconcat :: [m] -> m
 --     mconcat = foldr mappend mempty     -- 리스트를 위에껄로 리듀스
 
@@ -195,7 +197,101 @@ helloMe (CoolBool _) = "hello" -- newtype 값을 패턴매칭하면 값을 꺼�
 -- main = print $ mconcat [[1],[2],[3]]
 -- main = print $ mconcat ["a","b","c"]
 
+-- Data.Monoid
 
+-- 리스트 원소들을 다 곱해보기
+newtype Product a =  Product { getProduct :: a } deriving (Eq, Ord, Read, Show, Bounded)
 
--- haskell architecture
--- http://www.haskellforall.com/2014/04/scalable-program-architectures.html
+-- 아래의 Monoid 구현 예제 코드는 에러남 : Could not deduce (Semigroup (Product a)) ...
+-- instance Num a => Monoid (Product a) where  
+  -- mempty = Product 1  
+  -- Product x `mappend` Product y = Product (x * y) 
+
+-- 좀 찾아보니 4.11.1.0 부터 Monoid 는 Semigroup 의 하위 클래스라 Monoid 를 구현 하려면 Semigorup 부터
+-- 구현을 해줘야 함
+-- http://hackage.haskell.org/package/base-4.11.1.0/docs/Data-Monoid.html
+-- Semigroup 은 (<>) 함수 하나를 가지는 class. 구현체는 결합법칙이 성립 되야함(associative binary function)
+instance (Num a) => Semigroup (Product a) where
+  Product x <> Product y = Product (x * y) -- 예제의 mappend 구현
+  
+instance (Num a) => Monoid (Product a) where
+  mempty = Product 1
+  -- mappend = (<>) -- 이거 구현 생략해도 됨
+
+-- main = print $ getProduct . mconcat . map Product $ [3,4,2]
+
+-- 리스트 원소중 하나라도 True 이면 Ture
+newtype Any = Any { getAny :: Bool } deriving (Eq, Ord, Read, Show, Bounded)
+
+instance Semigroup Any where
+  (<>) (Any x) (Any y) = Any (x || y)
+
+instance Monoid Any where
+  mempty = Any False
+
+-- main = print $ getAny . mconcat . map Any $ [True, False]
+
+-- 리스트 원소중 모두 True 여야 Ture
+newtype All = All { getAll :: Bool } deriving (Eq, Ord, Read, Show, Bounded)
+
+instance Semigroup All where
+  (<>) (All x) (All y) = All (x && y)
+
+instance Monoid All where
+  mempty = All True
+
+-- main = print $ getAll . mconcat . map All $ [True, False]
+
+-- 리스트 원소중 가장 첫번째로 존재하는 값
+newtype First a = First { getFirst :: Maybe a } deriving (Eq, Ord, Read, Show)
+
+instance Semigroup (First a) where
+  First (Just x) <> _ = First (Just x)  
+  First Nothing <> x = x 
+
+instance Monoid (First a) where  
+  mempty = First Nothing  
+  -- First (Just x) `mappend` _ = First (Just x)  
+  -- First Nothing `mappend` x = x  
+
+-- main = print $ getFirst . mconcat . map First $ [Nothing, Just 9, Just 10]
+
+-- 반대로 Last 도 있음
+-- main = print $ getLast . mconcat . map Last $ [Nothing, Just 9, Just 10]
+
+-- fold data structures
+-- import qualified Data.Foldable as F
+-- 위모듈에 보면 Foldable 이라는 type class 가 있음.
+-- Data.Foldable 모듈에 foldr foldl 등이 잇는데 이게 prelude 함수의 foldr foldl 과 다른점은 리스트가 아니라는거
+-- foldr :: (a -> b -> b) -> b -> [a] -> b  -- prelude 꺼
+-- foldr :: (Data.Foldable t) => (a -> b -> b) -> b -> t a -> b  -- Data.Foldable 꺼
+
+-- main = print $ F.foldl (+) 2 (Just 9)  -- Maybe 는 Foldable 임
+
+-- 트리에다가 monoid 를 이용해서 fold 를 해보자
+data Tree a = Empty | Node a (Tree a) (Tree a) deriving (Show, Read, Eq)
+
+-- 아래 foldMap 을 구현하면 foldr foldl 이 사용가능함
+-- Data.Foldable.foldMap :: (Monoid m, Foldable t) => (a -> m) -> t a -> m
+-- m 이 Monoid 즉 첫번째 파람인 mapping 함수는 Monoid 타입을 리턴해야됨
+
+-- foldMap 구현할때 f 를 어디다 적용하고 그 결과인 monoid 값을 어떻게 합칠건지를 생각해보자
+instance F.Foldable Tree where  
+  foldMap f Empty = mempty  
+  foldMap f (Node x l r) = F.foldMap f l `mappend`  
+                           f x           `mappend`  
+                           F.foldMap f r
+
+testTree = Node 5  
+            (Node 3  
+                (Node 1 Empty Empty)  
+                (Node 6 Empty Empty)  
+            )  
+            (Node 9  
+                (Node 8 Empty Empty)  
+                (Node 10 Empty Empty)  
+            )
+
+-- main = print $ F.foldl (+) 0 testTree
+-- main = print $ F.foldMap (\x -> [x]) testTree
+
