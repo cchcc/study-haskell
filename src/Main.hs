@@ -1,9 +1,9 @@
 module Main where
 
+main = print "Hello World"
 
--- 용어 & 개념 정리
-
--- function applicatioin : 함수 호출.
+-- # 용어 & 개념 정리
+-- function application : 함수 호출.
 -- precedence : 함수호출이나 연산자등을 적용할때 뭐부터 할지에 대한 우선순위를 말함. 원 단어 뜻은 우선, 상위, 서열
 -- range : 리스트를 만들때 구성요소들의 순서나 규칙등을 정하는 방법
 -- type inference : 개발자가 일일이 이게 뭔 타입인지 명시하지 않아도 컴파일러가 알아서 무슨타입인지 인지함
@@ -25,19 +25,27 @@ module Main where
 -- record syntax : data 선언시 필드에 이름을 지정해주는 방법.
 -- type constructors : data 를 만들때 타입을 받는 생성자
 -- type synonyms : 똑같은 type 이 이름이 여러개 있는것.  ex) type String = [Char]
--- function composition : (.) (g . f) v
+-- function composition : 함수 합성 (.) (g . f) v
 -- type is concrete : 어떤 타입이 확정됨을 말함.
 -- functor : 뭔가 감싸져 있는 상태(box)에서 매핑이 되도록 해줌. computaional context
+-- applicative functor : 부분 적용된 함수가 감싸져 있고 이것과 일반 functor 와 함수 적용 가능도록 해줌.
+-- monoid : 리스트(혹은 다른 데이터 구조)의 모든 원소를 associative binary function 적용하도록 해줌.
 
--- ghci
+
+-- # ghci
 -- :info  : 해당 타입이 어떤 타입클래스가 구현되있는지
 -- :t  : 해당 값의 타입이 뭔지
 -- :k  : 해당 타입(data) 또는 타입클래스(type)의 kind 가 뭔지
+-- :{  : 여러줄 입력 시작
+-- :}  : 여러줄 입력 종료
 
+-- # 명령어
 -- compile 후 실행 파일 만들기
 -- ghc --make filename.hs
--- 바로 실행하기
+-- 소스를 바로 실행하기
 -- runhaskell filename.hs
 
+-- # 볼만한글
+-- haskell architecture
+-- http://www.haskellforall.com/2014/04/scalable-program-architectures.html
 
-main = print "Hello World"
