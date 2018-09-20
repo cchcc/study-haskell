@@ -94,6 +94,71 @@ walkLine1 = do
 -- >>= banana 를 >> Nothing 으로 대체
 -- main = print $ return (0,0) >>= landLeft 3 >> Nothing >>= landLeft 4 >>= landRight 1
 -- monad 체인중에 중간에 그냥 특정값 Just (0,0) 으로 바꿈
-main = print $ return (0,0) >>= landLeft 3 >> return (0,0) >>= landLeft 1 >>= landRight 1
+-- main = print $ return (0,0) >>= landLeft 3 >> return (0,0) >>= landLeft 1 >>= landRight 1
 
--- Maybe 에 monad (>>=) 를 이용한 함수 체인을 만들면 실패 처리(Nothing) 가 매우 편하당..
+-- Maybe 에 monad (>>=) 를 이용한 함수 체인을 만들면 case 로 분기처리하는거 보다 실패 처리(Nothing) 가 매우 편하당..
+
+-- do notation
+-- monadic value 에도 do notaion 이 사용 가능하다
+-- 하는 일은 IO 의 do 가 여러 IO action 을 한군데로 모아서 처리 가능 하도록 해준것처럼 
+-- monadic value 를 한군데로 모아서 처리 가능 하도록 해준다.
+
+-- 단계별로 생각해보자. 아래와 같은식이 있다고 해보면...
+-- Just 3 >>= (\x -> Just (show x ++ "!"))
+-- 람다안에 람다로 monad 체인
+-- Just 3 >>= (\x -> Just "!" >>= (\y -> Just (show x ++ y)))
+-- Just 3 >>= (\x -> Nothing >>= (\y -> Just (show x ++ y)))
+-- 위에꺼를 함수로 만들어보면
+foo :: Maybe String  
+foo = Just 3   >>= (\x -> 
+      Just "!" >>= (\y -> 
+      Just (show x ++ y)))
+
+-- 위에꺼는 람다식을 저렇게 쓰는게 좀 안이쁘다. 이걸 do 로 이용해서 바꾸면..
+foo2 :: Maybe String  
+foo2 = do  -- do 안에서 모든줄은 monadic value
+    x <- Just 3    -- Maybe 에서 값을 꺼냄, <- 이거는 monadic value 가 맞는지를 검사함
+    y <- Just "!"  
+    Just (show x ++ y)  -- 마지막 줄은 모든 monadic value 의 결과. <- 를 쓸수 없다. 
+
+-- do 는 monadic value 의 체인의 또다른 방법이다. 
+-- 체인 1개짜리로 비교해 보면 눈에 좀더 잘들어 온다.
+-- Just 9 >>= (\x -> Just (x > 8))
+-- 위랑 아래랑 같은거임 : 'x ->' 이거가 'x <- Just 9' 로 바뀜
+marySue :: Maybe Bool  
+marySue = do   
+    x <- Just 9  
+    Just (x > 8)
+
+-- 위에 예제 외줄타기 >>= 이거를 do 로 바꿔보자
+routine :: Maybe Pole  
+routine = do  
+    start <- return (0,0)  
+    first <- landLeft 2 start
+    _ <- Just (0,0)  -- 이거는 >> 를 사용한것과 같다.
+    Just (1,1)
+    Nothing
+    second <- landRight 2 first  
+    landLeft 1 second
+
+-- main = print routine
+-- >>= 쓰던 do 를 쓰던 맘대로 하면 되는데 이 외줄타기 예제는 >>= 를 쓰는게 적합한거 같다.
+-- 왜냐하면 이전 상태(Pole)를 계속 인풋으로 받아오니 >>= 로 표현하는게 더 깔끔하다.
+
+justH :: Maybe Char  
+justH = do  
+    -- (x:xs) <- Just "hello"  
+    (x:xs) <- Just ""  
+    -- (x:xs) <- Nothing
+    return x 
+
+-- main = print justH
+-- 패턴매칭하다 맞는 패턴이 없으면 런타임 오류가 나는데 do 안에서 패턴매칭하다가 패턴이 없으면 fail 을 호출한다
+main = print $ fail "no matching" :: Maybe String  -- Maybe 의 fail 은 그냥 Nothing
+
+
+-- list monad
+-- instance Monad [] where  
+--     return x = [x]  
+--     xs >>= f = concat (map f xs)  
+--     fail _ = [] 
