@@ -250,11 +250,15 @@ posIn3 sp dp =
             p3 <- moveKnight p2
             if p3 == dp then [()] else []
             return p3
-    -- 아래 >>= 스타일은 마지막에 필터부분 >> 에서 p3 를 받아올수 없으므로 쓸수 없다
-    -- let move3 = return sp >>= moveKnight >>= moveKnight >>= moveKnight >> (\_ -> if p3 == dp then [()] else [])
     in length move3 /= 0
 
-main = print $ posIn3 (6,2) (6,1)
+posIn3'::KnightPos -> KnightPos -> Bool
+posIn3' sp dp = 
+    let move3 = return sp >>= moveKnight >>= moveKnight >>= moveKnight >>= (\p -> if p == dp then [p] else [])
+    in length move3 /= 0
+
+-- main = print $ posIn3 (6,2) (6,1)
+main = print $ posIn3' (6,2) (6,1)
     
 -- Monad laws
 -- Monad type class 로 구현만 했다고 Monad 인게 아니라 아래 법칙까지 지켜야 Monad 이다.
