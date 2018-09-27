@@ -154,11 +154,115 @@ justH = do
 
 -- main = print justH
 -- 패턴매칭하다 맞는 패턴이 없으면 런타임 오류가 나는데 do 안에서 패턴매칭하다가 패턴이 없으면 fail 을 호출한다
-main = print $ fail "no matching" :: Maybe String  -- Maybe 의 fail 은 그냥 Nothing
+-- main = print $ fail "no matching" :: Maybe String  -- Maybe 의 fail 은 그냥 Nothing
 
 
 -- list monad
 -- instance Monad [] where  
---     return x = [x]  
+--     return x = [x]   -- pure 랑 같음
 --     xs >>= f = concat (map f xs)  
 --     fail _ = [] 
+
+-- main = print $ [3,4,5] >>= \x -> [x,-x]
+-- map 을 하고 : [[3,-3],[4,-4],[5,-5]] 
+-- flatten 을 함 : [3,-3,4,-4,5,-5]
+
+-- main = print $ [1,2] >>= \n -> ['a','b'] >>= \ch -> return (n,ch)
+-- 이런 비결정적 값들(리스트) 의 결과를 트리로 그려보자
+
+-- 위에걸 do 를 이용해 바꿔보면
+listOfTuples :: [(Int,Char)]  
+listOfTuples = do  
+    n <- [1,2]  
+    ch <- ['a','b']  
+    return (n,ch)  
+
+-- 위에걸 list comprehensions 로도 바꿀수 있다
+-- main = print $ [ (n,ch) | n <- [1,2], ch <- ['a','b'] ]
+-- 사실 list comprehensions 는 list monad 의 syntax sugar 였다.. 헐
+-- do 와 list comprehensions 은  >>= 를 사용한거다
+
+-- list comprehensions 에 filter 부분을 monad 를 이용해서 구현해보자
+-- monad 이면서 monoid 같은 클래스를 하나 만들고
+class Monad m => MonadPlus m where  
+    mzero :: m a  -- mempty  
+    -- mplus :: m a -> m a -> m a  -- mappend 근데 이건 예제에 쓰지도 않는데 왜 만들어놨지?
+
+instance MonadPlus [] where 
+    mzero = []  
+    -- mplus = (++)  
+
+-- 아래와 guard 함수를 하나 만들자
+guard :: (MonadPlus m) => Bool -> m ()  
+guard True = return ()
+guard False = mzero 
+
+testGuard = do
+    print $ (guard True :: [()])    -- () 는 그냥 더미 값
+    print $ (guard False :: [()])
+    -- print $ guard True :: Maybe []  -- Maybe 를 해보려면 MonadPlus Maybe 를 구현해야됨
+    -- print $ guard False :: Maybe []
+
+-- main = testGuard
+
+-- [ x | x <- [1..50], '7' `elem` show x ]  -- 필터 '7' `elem` show x 를 교체해보자
+useGuard = do
+    print $ [1..50] >>= (\x -> guard ('7' `elem` show x) >> return x)
+    print $ (guard (5 > 2) >> return "cool" :: [String])
+    print $ (guard (1 > 2) >> return "cool" :: [String])
+
+-- monad 체인에 >> 를 사용함으로서 앞에서(guard) 더미값 [()] 이 넘어오면 x 로 교체하고
+-- 값의 부재(mzero)를 의미하는 [] 가 넘어오면 >>= 의 리턴값으로 []를 사용.
+-- main = useGuard
+
+-- do 스타일로는 아래처럼
+sevensOnly :: [Int]
+sevensOnly = do
+    x <- [1..50]    -- >>=
+    guard ('7' `elem` show x)  -- >>
+    return x
+
+-- main = print sevensOnly
+
+-- A knight's quest
+-- 체스판(8x8) 에 기사(knight)가 있는데 3번만에 특정 위치로 갈수 있는지?
+
+-- 기사의 위치
+type KnightPos = (Int,Int) -- (열,행)
+
+-- 특정 위치에서 기사가 움직일수 있는 모든 위치 
+moveKnight::KnightPos -> [KnightPos]
+moveKnight (c,r) = do 
+    (c',r') <- [(c+2,r-1),(c+2,r+1),(c-2,r-1),(c-2,r+1)  
+                ,(c+1,r-2),(c+1,r+2),(c-1,r-2),(c-1,r+2)  
+                ]
+    if c' `elem` [1..8] && r' `elem` [1..8] then [()] else []
+    return (c',r')  -- 윗줄에서 결과가 [()] 일때만 리턴
+
+-- main = print $ moveKnight (6,2)
+
+-- 3번 움직여서 특정위치에 갈수 있는지
+posIn3::KnightPos -> KnightPos -> Bool
+posIn3 sp dp = 
+    let move3 = do
+            p1 <- moveKnight sp
+            p2 <- moveKnight p1
+            p3 <- moveKnight p2
+            if p3 == dp then [()] else []
+            return p3
+    -- 아래 >>= 스타일은 마지막에 필터부분 >> 에서 p3 를 받아올수 없으므로 쓸수 없다
+    -- let move3 = return sp >>= moveKnight >>= moveKnight >>= moveKnight >> (\_ -> if p3 == dp then [()] else [])
+    in length move3 /= 0
+
+main = print $ posIn3 (6,2) (6,1)
+    
+-- Monad laws
+-- Monad type class 로 구현만 했다고 Monad 인게 아니라 아래 법칙까지 지켜야 Monad 이다.
+-- 1. Left identity : return x >>= f 이거랑 f x 이거랑 같아야 함(IO 의 return 도 마찬가지)
+-- 2. Right identity : m >>= return 이거랑 m 이거랑 같아야 함
+-- 위에 2가지는 return 에 관련한거임
+-- 3. Associativity : (m >>= f) >>= g 이거랑 m >>= (\x -> f x >>= g) 이거랑 같아야 함
+
+-- monad 함수 합성
+(<=<) :: (Monad m) => (b -> m c) -> (a -> m b) -> (a -> m c)  
+f <=< g = (\x -> g x >>= f)  -- 이부분이 Associativity 랑 같다
