@@ -23,11 +23,10 @@
 - module : typeclass 나 function 등 관련있는것들 끼리 모아서 만든 일종의 라이브러리
 - prelude module : import 를 안해도 기본으로 탑재되어 있는 모듈들
 - data declaration : 값을 가지고 있는 대수형 데이타 타입 선언
-- value constructos : data 를 만들때 값을 받는 생성자
 - record syntax : data 선언시 필드에 이름을 지정해주는 방법.
-- value constructors : data 를 만들때 특정 타입의 값을 받는 생성자
+- value constructors : data 를 만들때 값을 받는 생성자
 - type constructors : data 를 만들때 타입을 받는 생성자
-- type synonyms : 똑같은 type 이 이름이 여러개 있는것.  ex) type String = [Char]
+- type synonyms : 똑같은 type 인데 다른 이름을 붙여준 것.  ex) type String = [Char]
 - function composition : 함수 합성 (.) (g . f) v
 - type is concrete : 어떤 타입이 확정됨을 말함.
 - functor : 뭔가 감싸져 있는 상태(box)에서 매핑이 되도록 해줌. computaional context
