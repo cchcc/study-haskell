@@ -56,7 +56,54 @@ testAddDrink = do
     -- return x = Writer (x, mempty)  -- default minimal context 는 monoid 의 mempty로
     -- (Writer (x,v)) >>= f = let (Writer (y, v')) = f x in Writer (y, v `mappend` v') -- applyLog
 
-main = do
-    print $ runWriter (return 3 :: Writer String Int)
-    print $ runWriter (return 3 :: Writer (Sum Int) Int)
+-- main = do
+--     print $ runWriter (return 3 :: Writer String Int)
+--     print $ runWriter (return 3 :: Writer (Sum Int) Int)
+--     print $ (writer (1, [""]) :: Writer [String] Int)  -- Writer 가 아니라 소문자 writer
 -- Writer 는 fail 구현이 없어서 do 에서 패턴매칭에 실패하면 error 가 호출된다
+
+-- 본문 예제대로 하면 에러남.. 아래 링크를 참고하자
+-- https://stackoverflow.com/questions/11684321/how-to-play-with-control-monad-writer-in-haskell
+logNumber :: Int -> Writer [String] Int
+logNumber x = writer (x, ["Got number: " ++ show x])
+
+-- do 를 써본다면 아래처럼..
+multWithLog :: Writer [String] Int
+multWithLog = do
+    a <- logNumber 3
+    b <- logNumber 5
+    tell ["Gonna multiply these two"]  -- 그리고 중간에 monoid 값에만 뭔가 붙이고 싶은경우 tell 을 사용
+    return (a*b)
+    -- return (tell ["Gonna multiply these two"])  -- tell 은 monoid 처리만 하고 더미값 m () 을 리턴하므로 마지막줄에 쓸수없다
+
+-- main = print $ runWriter multWithLog
+
+-- 최대 공약수 구하는 유클리드 호제법을 짜보자
+-- gcd 는 이미 있는 함수이므로
+gcd' :: Int -> Int -> Int  
+gcd' a b   
+    | b == 0    = a  
+    | otherwise = gcd' b (a `mod` b)
+
+
+gcd'' :: Int -> Int -> Writer [String] Int  
+gcd'' a b  
+    | b == 0 = do  
+        tell ["Finished with " ++ show a]
+        return a
+    -- | b == 0 = writer (a,["Finished with " ++ show a])  -- 이렇게도 쓸수 있지만 do 스타일이 가독성이 좀 더 좋은듯
+    | otherwise = do
+        tell [show a ++ " mod " ++ show b ++ " = " ++ show (a `mod` b)]  
+        gcd'' b (a `mod` b)
+
+
+testGcd = do
+    print $ gcd' 120 16
+    print $ runWriter (gcd'' 120 16)
+    print $ fst (runWriter (gcd'' 120 16))
+    mapM putStrLn $ snd $ runWriter (gcd'' 120 16)
+
+-- 일반 값들을 Writer (monadic value) 로 바꾸고 일반 함수 적용을 >>= (monadic function) 로 바꿔서
+-- 로깅 매카니즘을 추가 할수 있다.
+main = testGcd
+
