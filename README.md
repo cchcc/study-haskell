@@ -80,4 +80,6 @@ Install package :  [language-haskell](https://atom.io/packages/language-haskell)
 Install package : [Haskelly](https://marketplace.visualstudio.com/items?itemName=UCL.haskelly)
 
 ## 기타 볼만한 글
-- [haskell architecture](http://www.haskellforall.com/2014/04/scalable-program-architectures.html)
+- [Haskell programming tips](https://wiki.haskell.org/Haskell_programming_tips)
+- [Haskell architectures](http://www.haskellforall.com/2014/04/scalable-program-architectures.html)
+- 
