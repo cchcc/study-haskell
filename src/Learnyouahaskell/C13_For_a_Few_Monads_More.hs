@@ -96,7 +96,6 @@ gcd'' a b
         tell [show a ++ " mod " ++ show b ++ " = " ++ show (a `mod` b)]  
         gcd'' b (a `mod` b)
 
-
 testGcd = do
     print $ gcd' 120 16
     print $ runWriter (gcd'' 120 16)
@@ -105,5 +104,28 @@ testGcd = do
 
 -- 일반 값들을 Writer (monadic value) 로 바꾸고 일반 함수 적용을 >>= (monadic function) 로 바꿔서
 -- 로깅 매카니즘을 추가 할수 있다.
-main = testGcd
+-- main = testGcd
 
+-- Writer 에서 list monoid 를 쓸때 특정 상황에서 느릴때가 있다
+-- 위에서 짠 gcd 는 아래처럼 연산 방향이 좌->우 인거는 괜찮은데
+-- a ++ (b ++ (c ++ (d ++ (e ++ f))))
+-- 아래처럼 연산 방향이 우->좌 인거는 매번 우측을 좌측에 ++ 할때마다 좌측부터 새로 만들어야 하니 느리다.
+-- (++ 함수는 처리할때 왼쪽 리스트를 처음부터 끝까지 읽은다음에 마지막에 오른쪽걸 붙이기 때문)
+-- ((((a ++ b) ++ c) ++ d) ++ e) ++ f
+
+-- gcd 랑 연산순서를 바꿔서 짜보면
+gcdReverse :: Int -> Int -> Writer [String] Int
+gcdReverse a b
+    | b == 0 = do
+        tell ["Finished with " ++ show a]
+        return a
+    | otherwise = do
+        result <- gcdReverse b (a `mod` b)  -- 재귀를 먼저함
+        tell [show a ++ " mod " ++ show b ++ " = " ++ show (a `mod` b)]  -- 그러면 여기가 재귀 풀리면서 반대로 호출됨
+        return result
+
+main = mapM putStrLn $ snd $ runWriter (gcdReverse 120 16)
+
+-- 비효율적으로 리스트를 붙이는 문제를 Difference lists 를 이용해 개선해보자.
+-- difference list 는 리스트를 하나 받아서 그 앞에다 다른 리스트를 붙이는 동작을 하는 함수!다.
+-- 이런 형태 \xs -> [1,2,3] ++ xs , \xs -> [] ++ xs
