@@ -124,8 +124,88 @@ gcdReverse a b
         tell [show a ++ " mod " ++ show b ++ " = " ++ show (a `mod` b)]  -- 그러면 여기가 재귀 풀리면서 반대로 호출됨
         return result
 
-main = mapM putStrLn $ snd $ runWriter (gcdReverse 120 16)
+-- main = mapM putStrLn $ snd $ runWriter (gcdReverse 120 16)
 
 -- 비효율적으로 리스트를 붙이는 문제를 Difference lists 를 이용해 개선해보자.
 -- difference list 는 리스트를 하나 받아서 그 앞에다 다른 리스트를 붙이는 동작을 하는 함수!다.
 -- 이런 형태 \xs -> [1,2,3] ++ xs , \xs -> [] ++ xs
+newtype DiffList a = DiffList { getDiffList :: [a] -> [a] }
+
+toDiffList :: [a] -> DiffList a  
+toDiffList xs = DiffList (xs++)  -- prepend! 
+  
+fromDiffList :: DiffList a -> [a]  
+fromDiffList (DiffList f) = f []
+
+instance Semigroup (DiffList a) where
+    (DiffList f) <> (DiffList g) = DiffList (\xs -> f (g xs))
+
+instance Monoid (DiffList a) where  
+    mempty = DiffList (\xs -> [] ++ xs)  
+    -- (DiffList f) `mappend` (DiffList g) = DiffList (\xs -> f (g xs))
+
+gcdReverse' :: Int -> Int -> Writer (DiffList String) Int
+gcdReverse' a b
+    | b == 0 = do
+        tell (toDiffList ["Finished with " ++ show a])
+        return a
+    | otherwise = do
+        result <- gcdReverse' b (a `mod` b)
+        tell (toDiffList [show a ++ " mod " ++ show b ++ " = " ++ show (a `mod` b)])
+        return result
+
+-- main = mapM putStrLn $ fromDiffList $ snd $ runWriter (gcdReverse' 120 16)
+
+-- main = print $ fromDiffList $ toDiffList ["finish~"] <> toDiffList ["16~"] <> toDiffList ["120~"]
+-- 이게 한번에 이해가 안되는데 재귀 풀리는 순서대로 toDiifList 적용을 하나씩 하나씩 풀어서 써보자
+-- toDiffList ["Finish~"] <> toDiffList ["16~"] <> toDiffList ["120~"]
+-- 1: "Finish~"++ <>  "16~"++ <> "120~"++ []
+-- 2: "Finish~" ++ ("16~"++ ("120~" ++ ([])))
+-- 아래 글도 참고
+-- https://wiki.haskell.org/Difference_list
+
+-- 아래 처럼 일반 리스트와 DiffList 연산을 세는 함수를 만들어서 비교해보면 뭐가더 빠른지 볼수 있다
+finalCountDown :: Int -> Writer (DiffList String) ()  
+finalCountDown 0 = do  
+    tell (toDiffList ["0"])  
+finalCountDown x = do  
+    finalCountDown (x-1)  
+    tell (toDiffList [show x])
+
+finalCountDown' :: Int -> Writer [String] ()  
+finalCountDown' 0 = do  
+    tell ["0"]  
+finalCountDown' x = do  
+    finalCountDown' (x-1)  
+    tell [show x]
+
+-- main = mapM putStrLn . fromDiffList . snd . runWriter $ finalCountDown 500000
+-- main = mapM putStrLn . snd . runWriter $ finalCountDown' 500000
+
+-- Reader Monad(function monad)
+-- (->) 는 applicative 임. 그럼 얘를 monad 로 만들어보자면
+-- instance Monad ((->) r) where  
+--     return x = \_ -> x  -- pure 랑 같은거
+--     h >>= f = \w -> f (h w) w   -- 이걸 차근차근 뜯어보자
+-- 일단 결과인 monadic value 는 함수가 되야하니 람다. h 에서 값을 꺼내 f 를 적용해야 되는데...
+-- h 는 분리가 안되는 함수이므로 (h w) 로 f 가 적용가능한 값을 먼저 만들어서 거기다 f 를 적용
+-- f 를 적용 하면, f (h w), 다시 함수가 나오므로 이걸 w 에 적용, 그리고 그걸 적용하는 람다가 결과
+
+addStuff :: Int -> Int  
+addStuff = do  
+    a <- (*2)  
+    b <- (+10)  
+    return (a+b)
+
+addStuff' :: Int -> Int  
+addStuff' x = let  
+    a = (*2) x  
+    b = (+10) x  
+    in a+b
+
+-- main = do
+    -- print $ addStuff 3  -- 이건 applicative 랑 같다
+    -- print $ (+) <$> (*2) <*> (+10) $ 3
+-- 각 함수들이 하나의 공통 소스를 이용해서 적용되므로 reader monad 라고도 불린다
+-- 어떤 많은 함수들이 있는데 공통으로 적용될 하나의 파라매터가 빠져있는 상태. 
+-- 이걸 reader monad 를 이용해 최종 값을 뽑아보고, >>= 구현을 통해서 작 동작하는지를 확인해볼수 있다.
