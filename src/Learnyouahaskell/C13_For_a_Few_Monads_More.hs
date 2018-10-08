@@ -6,6 +6,8 @@ module Learnyouahaskell.C13_For_a_Few_Monads_More where
 
 import Data.Monoid  -- Sum
 import Control.Monad.Writer
+import Control.Monad.State
+import System.Random
 
 -- monad 는 mtl 패키지 안에 있다.(커맨드 : ghc-pkg list)
 
@@ -215,3 +217,98 @@ addStuff' x = let
 -- 이전 상태(x)를 파라매터로 받고 상태를 가지는 계산을 한뒤 그 결과(5)와 새로운 상태(x)를 돌려주는 함수로 생각해볼수 있다
 -- 이를 타입으로 만들어 보면 아래와 같다
 -- s -> (a,s)  -- s 는 상태, a 는 상태 계산 결과
+
+-- 리스트로 pop 과 push 를 하는 스택을 하나 만들어보자
+type Stack = [Int]
+  
+pop :: Stack -> (Int,Stack)
+pop (x:xs) = (x,xs)
+  
+push :: Int -> Stack -> ((),Stack)
+push a xs = ((),a:xs)   -- 결과가 필요 없더라도 () 를 반환
+
+stackManip :: Stack -> (Int, Stack)
+stackManip stack = let
+    ((),newStack1) = push 3 stack
+    (a ,newStack2) = pop newStack1
+    in pop newStack2
+
+-- main = print $ stackManip [5,8,2,1]
+
+-- newtype State s a = State { runState :: s -> (a,s) }
+
+-- instance Monad (State s) where  
+--     return x = State $ \s -> (x,s)   -- 상태를 가지는 것에 대한 최소의 컨텍스트. 항상 이거부터 생각하자
+--     (State h) >>= f = State $ \s -> let (a, newState) = h s  -- 일단 일반값을 뽑아내기 위해 기존 h 를 상태 s 에 적용함
+--                                                              -- 타입이 함수인 모나드들은 값을 추출하기 위해 함수적용부터 하는듯
+--                                         (State g) = f a  -- 그리고 그결과에 f 를 적용(f 의 결과 타입은 State)
+--                                     in  g newState  -- 그리고 g 을 newState 에 적용해서 State 타입을 만듬
+
+-- 위에걸 State monad 로 다시 짜보면.. 에러나는데 State 감싸줄때 소문자 s 로 변경해야한다
+pop' :: State Stack Int
+pop' = state $ \(x:xs) -> (x,xs)  -- 결과 타입이 State 이므로 State 로 감싸준다
+  
+push' :: Int -> State Stack ()
+push' a = state $ \xs -> ((),a:xs)
+
+-- 그리고 위에 함수를 do 를 이용해 아래처럼 이쁘게 쓸수 있다
+stackManip' :: State Stack Int
+stackManip' = do
+    push' 3
+    -- a <- pop'  -- a 를 안쓰니 굳이 바인딩 할필요는 없다
+    pop'
+    pop'
+
+-- main = print $ runState stackManip' [5,8,2,1]
+
+-- MonadState 라는 type class 가 있음. 그 맴버 함수가
+-- get = State $ \s -> (s,s)  -- 현재 상태를 그대로 State 타입으로 결과냄
+-- put newState = State $ \s -> ((),newState)  -- 기존 상태를 버리고 새로운 상태를 받아서 State 타입으로 결과냄
+
+stackyStack :: State Stack ()
+stackyStack = do
+    stackNow <- get
+    if stackNow == [1,2,3]
+        then put [8,3,1]
+        else put [9,2,1]
+
+-- main = print $ runState stackyStack [1,2,3,1]
+
+-- State 의 >>= 타입을 살펴보면
+-- (>>=) :: State s a -> (a -> State s b) -> State s b
+-- 잘보면 a 를 f 적용후 b 로 바꿔주는거고 이경우 monad 는 State s
+
+-- 이전의 랜덤 문제를 State monad 로 풀어보자. 일단 random 타입을 살펴보면
+-- random :: (RandomGen g, Random a) => g -> (a, g)  -- 딱 State type 임
+
+-- random 을 State monad 로 만드는 함수를 만들고
+randomSt :: (RandomGen g, Random a) => State g a  
+randomSt = state random 
+
+-- 아래처럼 쓸수 있다
+threeCoins :: State StdGen (Bool,Bool,Bool)
+threeCoins = do
+    a <- randomSt
+    b <- randomSt
+    c <- randomSt
+    return (a,b,c)
+
+-- main = print $ runState threeCoins (mkStdGen 100)
+
+-- Either e a 를 살펴보자. Either 는 실패경우 특정 값을 넣어줄수 있는 Maybe 의 강화판이다.
+-- 따라서 실패 가능성의 컨텍스트를 가질수 있다 보고 (Either e) 로 묶어 monad 를 만들수 있다.
+-- instance (Error e) => Monad (Either e) where  
+--     return x = Right x   
+--     Right x >>= f = f x   -- Maybe 랑 동일
+--     Left err >>= f = Left err   -- 실패인 경우에는 그냥 Left
+--     fail msg = Left (strMsg msg)
+
+testEither = do
+    print $ Left "boom" >>= \x -> return (x+1)
+    print $ Right 100 >>= \x -> Left "no way!" :: Either String Int  -- 엥 이거도 타입 명시해줘야 됨..?
+    -- print $ Right 3 >>= \x -> return (x + 100) -- 이거는 수식에서 e 의 타입을 알수 없으므로 타입 명시가 필요하다
+    print $ Right 3 >>= \x -> return (x + 100) :: Either String Int
+    
+-- main = testEither
+
+-- useful monadic functions
