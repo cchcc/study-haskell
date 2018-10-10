@@ -312,3 +312,50 @@ testEither = do
 -- main = testEither
 
 -- useful monadic functions
+
+-- liftM 은 Functor 의 fmap 과 동일한데 대상이 monadic value 이다.
+-- liftM :: (Monad m) => (a -> b) -> m a -> m b  
+-- liftM f m = m >>= (\x -> return (f x))   -- 일반값에 f 를 적용하고 return 적용
+
+testLiftM = do
+    print $ liftM (+1) (Just 1)
+    print $ liftM (+1) [1,2,3]
+    print $ runState (liftM (+1) pop') [1,2,3]  -- pop' 은 State, State 는 함수
+
+-- main = testLiftM
+
+-- ap 는 Applicative 의 <*> 와 동일하다
+-- ap :: (Monad m) => m (a -> b) -> m a -> m b  
+-- ap mf m = do  
+--     f <- mf    -- 이걸 꺼내면 함수다(a -> b)
+--     x <- m  
+--     return (f x)
+
+-- 그리고 liftM2 는 LiftA2 와 같다 (liftM3, liftM4, liftM5)
+
+testAp = do
+    print $ ap (Just (+1)) (Just 1)
+    print $ ap [(+1),(subtract 1)] [3,4]
+
+-- main = testAp
+
+-- 결론은 monad 는 functor 나 applicative 의 기능을 동일하게 쓸수있다
+
+-- join 은 monad 안에 monad 를 flatten 시켜주는 함수
+-- join :: (Monad m) => m (m a) -> m a  
+-- join mm = do  
+--     m <- mm  -- monad 를 한번 꺼내서
+--     m  -- 그대로 결과 처리
+
+testJoin = do
+    print $ join [[1,2,3],[4,5,6]]  -- flatten 시켜주는 함수 concat 와 같다
+    print $ [[1,2,3],[4,5,6]] >>= (\x -> x)
+    -- print $ join [1,2,3]  -- 근데 이건 안됨
+    print $ join (Just (Just 9))
+    print $ join (Just (Nothing :: Maybe Int))  -- Maybe 의 경우 Nothing 이 껴있으면 뭐가 됬던 Nothing
+    -- print $ join (Nothing::Maybe Int)
+    -- print $ join Nothing -- 이거 ghci 는 되는데 컴파일로는 안되네..
+    print $ runWriter $ join (writer (writer (1,"aaa"),"bbb"))
+    print $ runWriter (writer (writer (1,"aaa"),"bbb") >>= (\x -> x))
+
+main = testJoin
