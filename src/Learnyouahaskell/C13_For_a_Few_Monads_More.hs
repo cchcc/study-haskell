@@ -344,12 +344,13 @@ testAp = do
 -- join 은 monad 안에 monad 를 flatten 시켜주는 함수
 -- join :: (Monad m) => m (m a) -> m a  
 -- join mm = do  
---     m <- mm  -- monad 를 한번 꺼내서
---     m  -- 그대로 결과 처리
+--     m <- mm  -- monad 를 꺼내서
+--     m  -- return 으로 감싸지 않고 그대로 결과 처리
 
 testJoin = do
     print $ join [[1,2,3],[4,5,6]]  -- flatten 시켜주는 함수 concat 와 같다
-    print $ [[1,2,3],[4,5,6]] >>= (\x -> x)
+    print $ [[1,2,3],[4,5,6]] >>= (\x -> x)  -- 함수가 감싸지 않고 그대로 결과처리
+    print $ join (fmap (\x -> x) [[1,2,3],[4,5,6]])  -- m >>= f 와 join (fmap f m) 이거는 같다
     -- print $ join [1,2,3]  -- 근데 이건 안됨
     print $ join (Just (Just 9))
     print $ join (Just (Nothing :: Maybe Int))  -- Maybe 의 경우 Nothing 이 껴있으면 뭐가 됬던 Nothing
@@ -357,5 +358,46 @@ testJoin = do
     -- print $ join Nothing -- 이거 ghci 는 되는데 컴파일로는 안되네..
     print $ runWriter $ join (writer (writer (1,"aaa"),"bbb"))
     print $ runWriter (writer (writer (1,"aaa"),"bbb") >>= (\x -> x))
+    print $ runState (join (state $ \s -> (push' 10,1:2:s))) [0,0,0]
+    print $ runState ((state $ \s -> (push' 10,1:2:s)) >>= (\x -> x)) [0,0,0]
 
-main = testJoin
+-- main = testJoin
+
+-- filterM
+-- predicate 가 monadic function. 리스트의 각 원소가 True 인지 False 인지 판단하면서 추가적으로 컨텍스트를 껴넣는 연산이 가능하다.
+-- filterM :: (Monad m) => (a -> m Bool) -> [a] -> m [a] 
+
+keepSmall :: Int -> Writer [String] Bool  
+keepSmall x  
+    | x < 4 = do  
+        tell ["Keeping " ++ show x]  
+        return True  
+    | otherwise = do  
+        tell [show x ++ " is too large, throwing it away"]  
+        return False
+
+-- main = mapM putStrLn $ snd $ runWriter $ filterM keepSmall [9,1,5,2,10,3]
+
+-- filterM 을 직접 짜보면..
+filterM' :: (Monad m) => (a -> m Bool) -> [a] -> m [a] 
+filterM' _ [] = return []
+filterM' f (x:xs) = do
+    ok <- f x
+    xss <- filterM' f xs
+    return (if ok then x:xss else xss)
+
+filterM'' :: (Monad m) => (a -> m Bool) -> [a] -> m [a] 
+filterM'' _ [] = return []
+filterM'' f (x:xs) = f x >>= 
+    (\ok -> if ok then (filterM'' f xs) >>= (\xss -> return (x:xss)) else filterM'' f xs)
+
+-- 멱집합을 filterM 으로 짜보면
+powerset :: [a] -> [[a]]  
+powerset xs = filterM (\x -> [True, False]) xs  -- 헐...?
+-- 이거 이해가 잘 안되는데 일단 list monad 구현(concat map) 과 filterM 구현을 좀 보고
+-- 멱집합을 만들때 빈거 [[]] 부터 시작해서 인풋의 각 원소들을 존재하는(True) 그룹, 없는(False) 그룹으로 계속 중첩 계산하는 방식으로 구현한다.
+-- [ [] ] =(인풋 3)=>  [ [3] , [] ]  =(인풋 2)=> [ [2,3],[2] , [3],[] ]
+
+-- main = print $ powerset [1,2,3]
+main = print $ filterM'' (\x -> [True, False]) [1,2,3]
+
