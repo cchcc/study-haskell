@@ -399,5 +399,17 @@ powerset xs = filterM (\x -> [True, False]) xs  -- 헐...?
 -- [ [] ] =(인풋 3)=>  [ [3] , [] ]  =(인풋 2)=> [ [2,3],[2] , [3],[] ]
 
 -- main = print $ powerset [1,2,3]
-main = print $ filterM'' (\x -> [True, False]) [1,2,3]
+-- main = print $ filterM'' (\x -> [True, False]) [1,2,3]
+
+-- foldM
+-- foldl 의 monad 판
+binSmalls :: Int -> Int -> Maybe Int  
+binSmalls acc x  
+    | x > 9     = Nothing    
+    | otherwise = Just (acc + x)
+-- 의미를 생각해보면 9보다 큰 원소가 하나라도 있으면 Nothing 으로 처리
+
+main = do
+    print $ foldM binSmalls 0 [2,8,3,1]
+    print $ foldM binSmalls 0 [2,11,3,1]
 
