@@ -392,7 +392,7 @@ filterM'' f (x:xs) = f x >>=
     (\ok -> if ok then (filterM'' f xs) >>= (\xss -> return (x:xss)) else filterM'' f xs)
 
 -- 멱집합을 filterM 으로 짜보면
-powerset :: [a] -> [[a]]  
+powerset :: [a] -> [[a]]
 powerset xs = filterM (\x -> [True, False]) xs  -- 헐...?
 -- 이거 이해가 잘 안되는데 일단 list monad 구현(concat map) 과 filterM 구현을 좀 보고
 -- 멱집합을 만들때 빈거 [[]] 부터 시작해서 인풋의 각 원소들을 존재하는(True) 그룹, 없는(False) 그룹으로 계속 중첩 계산하는 방식으로 구현한다.
@@ -409,7 +409,53 @@ binSmalls acc x
     | otherwise = Just (acc + x)
 -- 의미를 생각해보면 9보다 큰 원소가 하나라도 있으면 Nothing 으로 처리
 
-main = do
-    print $ foldM binSmalls 0 [2,8,3,1]
-    print $ foldM binSmalls 0 [2,11,3,1]
+-- main = do
+    -- print $ foldM binSmalls 0 [2,8,3,1]
+    -- print $ foldM binSmalls 0 [2,11,3,1]
 
+-- 챕터 10의 RPN 문제를 monad 로 풀어보자
+readMaybe :: (Read a) => String -> Maybe a  
+readMaybe st = case reads st of [(x,"")] -> Just x   -- reads 는 실패하면 [] 가나옴
+                                _ -> Nothing
+
+foldingFunction :: [Double] -> String -> Maybe [Double]  
+foldingFunction (x:y:ys) "*" = return ((x * y):ys)  
+foldingFunction (x:y:ys) "+" = return ((x + y):ys)  
+foldingFunction (x:y:ys) "-" = return ((y - x):ys)  
+foldingFunction xs numberString = liftM (:xs) (readMaybe numberString)
+
+testFoldingFunction = do
+    print $ foldingFunction [3,2] "*"
+    print $ foldingFunction [] "*"  -- 실패하면 Nothing 이 나옴
+    print $ foldingFunction [] "1"
+    print $ foldingFunction [] "1 wawawawa"
+
+-- main = testFoldingFunction
+
+solveRPN :: String -> Maybe Double
+solveRPN st = do
+    [result] <- foldM foldingFunction [] (words st)  -- foldl 대신 foldM 을 사용
+    return result
+
+-- Composing monadic functions
+-- 함수 합성을 리스트와 fold 를 이용해서 아래처럼 짜볼수 있다
+-- let f = foldr (.) id [(+1),(*100),(+1)]  -- 초기값이 id
+
+-- monad 함수 합성을 위와 비슷하게 해보면
+
+-- 앞 챕터에서 만든 monad 합성
+-- (<=<) :: (Monad m) => (b -> m c) -> (a -> m b) -> (a -> m c)
+-- f <=< g = (\x -> g x >>= f)
+
+-- inMany :: Int -> KnightPos -> [KnightPos]  
+-- inMany x start = return start >>= foldr (<=<) return (replicate x moveKnight)
+-- moveKnight 를 x 개 들어있는 리스트, 그리고 초기값이 return
+
+
+map multAll [( Prob [('a',1%2),('b',1%2)] , 1%4 )  ,( Prob [('c',1%2),('d',1%2)] , 3%4)]
+
+multAll:: (Prob a, Rational) -> [(a, Rational)]
+multAll (Prob innerxs,p) = map (\(x,r) -> (x,p*r)) innerxs
+
+flatten :: Prob (Prob a) -> Prob a
+flatten (Prob xs) = Prob $ concat $ map multAll xs
