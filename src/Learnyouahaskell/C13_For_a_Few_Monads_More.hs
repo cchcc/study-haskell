@@ -8,6 +8,7 @@ import Data.Monoid  -- Sum
 import Control.Monad.Writer
 import Control.Monad.State
 import System.Random
+import Data.Ratio
 
 -- monad 는 mtl 패키지 안에 있다.(커맨드 : ghc-pkg list)
 
@@ -451,11 +452,76 @@ solveRPN st = do
 -- inMany x start = return start >>= foldr (<=<) return (replicate x moveKnight)
 -- moveKnight 를 x 개 들어있는 리스트, 그리고 초기값이 return
 
+-- 어떤 문제의 한 측면을 반영하여(model) 타입을 만들고, 타입의 값이 뭔가의 context 가 있다면 monad 로 만들수 있는지 살펴보자.
+-- a value with a context
 
-map multAll [( Prob [('a',1%2),('b',1%2)] , 1%4 )  ,( Prob [('c',1%2),('d',1%2)] , 3%4)]
+-- 각 멤버가 뭔가의 확률을 나타내는 리스트를 만든다고 해보자.
+-- [(3,0.5),(5,0.25),(9,0.25)]  -- 확률은 0~1 사이고 모든 멤버의 확률을 다 합치면 1
+-- 부동소수점 정밀도 문제를 피하기 위해 Data.Ratio 모듈에 있는 Rational 을 이용하자
+testRatio = do
+    print $ 1 % 4   --- 4분에1
+    print $ 1 % 2 + 1 % 2   -- 2분에1 더하기 2분에1
+    print $ (1 % 2) * (1 % 2)
+
+-- main = testRatio
+-- list 에 확률이라는 context 가 있다. 이를 타입으로 래핑해보면
+newtype Prob a = Prob { getProb :: [(a,Rational)] } deriving Show 
+
+instance Functor Prob where  -- monad 는 Functor 이므로 Functor 를 만들어주자
+    fmap f (Prob xs) = Prob $ map (\(x,p) -> (f x,p)) xs  -- Prob 은 기본적으로 list 이므로 list map 과 비슷하다
+
+instance Applicative Prob where  -- monad 가 되려면 Applicative 도 만들어야됨
+    pure x = Prob [(x,1%1)]
+    (Prob fs) <*> (Prob xs) = Prob [(f x, p1*p2) | (f,p1) <- fs, (x,p2) <- xs]  -- list 구현을 따라감
+
+-- monad 를 만들어보기위해 return 과 >>= 의 구현을 생각해보자
+-- minimal context 는 리스트 전체의 확률이 1 이므로 Prob [(x, 1%1)], pure 랑 동일
+-- >>= 는 join (fmap f m) 이다. 위에 fmap 은 구현을 햇으니, m (m a) 를 flatten 시켜주는 방법만 생각해보면 된다.
+-- 뭔가가 일어날 확률에 또 뭔가가 일어날 확률 이면.. 곱하는거다. 즉 list 를 한번 벗기면서 내부 리스트의 각 확률이랑 멤버 확률을 곱함
+
+probs = Prob [( Prob [('a',1%2),('b',1%2)] , 1%4 )  ,( Prob [('c',1%2),('d',1%2)] , 3%4)]
+
+-- flatten :: Prob (Prob a) -> Prob a  
+-- flatten (Prob xs) = Prob $ concat $ map multAll xs  
+--     where multAll (Prob innerxs,p) = map (\(x,r) -> (x,p*r)) innerxs
 
 multAll:: (Prob a, Rational) -> [(a, Rational)]
 multAll (Prob innerxs,p) = map (\(x,r) -> (x,p*r)) innerxs
 
 flatten :: Prob (Prob a) -> Prob a
 flatten (Prob xs) = Prob $ concat $ map multAll xs
+
+-- main = do
+    -- print $ map multAll [( Prob [('a',1%2),('b',1%2)] , 1%4 )  ,( Prob [('c',1%2),('d',1%2)] , 3%4)]
+    -- print $ flatten probs
+
+-- 이제 위에것들로 monad 를 만들어보자
+instance Monad Prob where
+    return x = Prob [(x,1%1)]
+    m >>= f = flatten (fmap f m)
+    fail _ = Prob []  -- fail 은 list 와 동일하게 감
+
+-- monad law 가 성립하는지 확인해보자
+-- 1. return x >>= f 랑 f x
+-- 2. m >>= return 랑 m  -- minimal context 의 확률이 1%1 인데 이거를 각 원소해 곱해봤자 동일한값
+-- 3. f <=< (g <=< h) 랑 (f <=< g) <=< h  -- 확률끼리의 곱, 1%2 * (1%3 * 1%5) 랑 (1%2 * 1%3) * 1%5 같다
+
+-- Prob 을 이용해서 아래 문제를 풀어보자
+data Coin = Heads | Tails deriving (Show, Eq)  
+  
+coin :: Prob Coin  -- 일반 동전 던져서 앞뒤 나올 확률 5:5
+coin = Prob [(Heads,1%2),(Tails,1%2)]
+  
+loadedCoin :: Prob Coin  -- 조작 동전 던져서 앞뒤 나올 확률 1:9
+loadedCoin = Prob [(Heads,1%10),(Tails,9%10)]
+
+-- 그러면 일반동전2개 조작동전1개 동시에 던져본다면?
+flipThree :: Prob Bool
+flipThree = do  
+    a <- coin  
+    b <- coin  
+    c <- loadedCoin  
+    return (all (==Tails) [a,b,c])  -- 3개다 뒷면이 나오는 경우의 확률
+    -- return [a,b,c]  -- 나올수 있는 모든 경우의 종류와 그 확률. list comprehension
+
+main = print flipThree
