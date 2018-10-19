@@ -101,6 +101,98 @@ goSibling (t, br@(RightCrumb x l:bs)) = (t, br) -: goUp -: goLeft'
 
 -- main = print $ (freeTree, []) -: goRight' -: goLeft' -: goUp -: goUp
 
--- 위에서 해당 노드와 그 주변정보를 묶은것을 zipper 라 해보자
+-- 관심이 있는 원소(Tree a) 와 이걸 뺀 나머지 모든 주변정보(Breadcrumbs a) 를 합친것 이를 zipper 라 해보자
 type Zipper a = (Tree a, Breadcrumbs' a)
 
+modify :: (a -> a) -> Zipper a -> Zipper a  
+modify f (Node x l r, bs) = (Node (f x) l r, bs)  
+modify f (Empty, bs) = (Empty, bs)
+
+testModify = do
+    let newFocus = (freeTree,[]) -: goLeft' -: goRight' -: modify (\_ -> 'P') -- 위에 W 를 P 로 바꾸기
+    print $ newFocus
+    print $ newFocus -: goUp -: modify (\_ ->'X')
+
+-- main == testModify
+
+-- 현재 focus 를 새로운 tree 로 바꿈.
+attach :: Tree a -> Zipper a -> Zipper a  
+attach t (_, bs) = (t, bs)
+
+testAttach = do
+    let farLeft = (freeTree,[]) -: goLeft' -: goLeft' -: goLeft' -: goLeft'  
+    let newFocus = farLeft -: attach (Node 'Z' Empty Empty)
+    print newFocus
+
+-- main = testAttach
+
+-- 루트로 이동하기. Breadcrumbs 가 [] 가 될때까지 재귀
+topMost :: Zipper a -> Zipper a  
+topMost (t,[]) = (t,[])  
+topMost z = topMost (goUp z)
+
+-- 리스트용 Zipper 를 생각해보자. 리스트는 자식 노드가 하나뿐인 트리로 생각해볼수 있다.
+-- data List a = Empty | Cons a (List a) deriving (Show, Read, Eq, Ord)
+
+-- (관심정보, 그외 모든정보)
+-- 관심있는 정보는 해당 위치부터 나머지 리스트를 다 가진것 이고,
+-- 그외 모든정보는 트리처럼 방향정보나 그외 노드(부모,형제)가 없고 이전 정보만 필요하다. Crumbs 처럼 타입 따로 안만들고 그냥 [a]
+type ListZipper a = ([a],[a])
+
+goForward :: ListZipper a -> ListZipper a
+goForward (x:xs, bs) = (xs, x:bs)
+  
+goBack :: ListZipper a -> ListZipper a
+goBack (xs, b:bs) = (b:xs, bs)
+
+goFirst :: ListZipper a -> ListZipper a
+goFirst (xs, []) = (xs, [])
+goFirst z = goFirst $ goBack z
+
+testListZipper = do
+    let xs = [1,2,3,4]
+    let xs2 = (xs,[]) -: goForward
+    print $ xs2
+    let xs3 = xs2 -: goForward -: goForward -: goBack
+    print $ xs3
+    print $ goFirst xs3
+
+-- main = testListZipper
+
+-- 아래 같은 파일 시스템의 zipper 를 만들어보자.
+type Name = String  
+type Data = String  
+data FSItem = File Name Data | Folder Name [FSItem] deriving (Show)
+
+myDisk :: FSItem  
+myDisk = 
+    Folder "root"   
+        [ File "goat_yelling_like_man.wmv" "baaaaaa"  
+        , File "pope_time.avi" "god bless"  
+        , Folder "pics"  
+            [ File "ape_throwing_up.jpg" "bleargh"  
+            , File "watermelon_smash.gif" "smash!!"  
+            , File "skull_man(scary).bmp" "Yikes!"  
+            ]  
+        , File "dijon_poupon.doc" "best mustard"  
+        , Folder "programs"  
+            [ File "fartwizard.exe" "10gotofart"  
+            , File "owl_bandit.dmg" "mov eax, h00t"  
+            , File "not_a_virus.exe" "really not a virus"  
+            , Folder "source code"  
+                [ File "best_hs_prog.hs" "main = print (fix error)"  
+                , File "random.hs" "main = print 4"  
+                ]  
+            ]  
+        ]
+
+-- 트리와 비슷한데 다만 아래로 내려가는것은 Folder 만 가능하다. 즉 어떤 원소의 부모는 Folder 만 됨. 
+-- File 은 트리의 Empty 와 비슷
+-- Breadcrumb 을 생각해보면.. 
+-- 해당원소 외에 모든 주변정보는 Folder 에 들어있다.  Folder 의 이름과 리스트에서 해당 원소만 빼서 왼/오 로 나눠서 저장해볼수 있다.
+data FSCrumb = FSCrumb Name [FSItem] [FSItem] deriving (Show)
+
+type FSZipper = (FSItem, [FSCrumb])
+
+fsUp :: FSZipper -> FSZipper  
+fsUp (item, FSCrumb name ls rs:bs) = (Folder name (ls ++ [item] ++ rs), bs) -- 부모 재생성, bs 의 맨앞에꺼 뺌
