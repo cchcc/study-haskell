@@ -196,3 +196,47 @@ type FSZipper = (FSItem, [FSCrumb])
 
 fsUp :: FSZipper -> FSZipper  
 fsUp (item, FSCrumb name ls rs:bs) = (Folder name (ls ++ [item] ++ rs), bs) -- 부모 재생성, bs 의 맨앞에꺼 뺌
+
+nameIs :: Name -> FSItem -> Bool  -- FSItem 의 name 이 맞는지 체크하는 함수
+nameIs name (Folder folderName _) = name == folderName  
+nameIs name (File fileName _) = name == fileName  
+
+fsTo :: Name -> FSZipper -> FSZipper  -- 특정 파일로 이동
+fsTo name (Folder folderName items, bs) =   
+    let (ls, item:rs) = break (nameIs name) items  -- break 로 폴더의 [] 를 name 기준으로 앞뒤 분리한다.
+    in  (item, FSCrumb folderName ls rs:bs)
+  
+-- main = print $ fst $ (myDisk, []) -: fsTo "pope_time.avi"
+
+fsRename :: Name -> FSZipper -> FSZipper  -- 이름 변경하기
+fsRename newName (Folder name items, bs) = (Folder newName items, bs)  
+fsRename newName (File name dat, bs) = (File newName dat, bs)
+
+-- main = print $ fst $ (myDisk, []) -: fsTo "pope_time.avi" -: fsRename "1.1"
+
+fsNewFile :: FSItem -> FSZipper -> FSZipper  -- 새로 만들기
+fsNewFile item (Folder folderName items, bs) =   
+    (Folder folderName (item:items), bs)  
+
+-- main = print $ fst $ (myDisk, []) -: fsTo "pics" -: fsNewFile (File "a.jpg" "a")
+
+-- 지금까지 Tree, List, File 관련 Zipper 를 짜면서 Empty 의 경우 어떻게 할지 처리를 안해주고 있었다.
+-- 이를 Maybe 로 감싸서 처리를 해보자.
+
+goLeft'' :: Zipper a -> Maybe (Zipper a)  
+goLeft'' (Node x l r, bs) = Just (l, LeftCrumb x r:bs)  
+goLeft'' (Empty, _) = Nothing  
+  
+goRight'' :: Zipper a -> Maybe (Zipper a)  
+goRight'' (Node x l r, bs) = Just (r, RightCrumb x l:bs)  
+goRight'' (Empty, _) = Nothing 
+
+-- 근데 이걸 이제 이런식으로 못쓴다. 타입이 안맞음
+-- main = print $ goRight'' (goRight'' (goRight'' (freeTree, []))) 
+-- main = print $ (freeTree, []) -: goRight'' -: goRight''
+
+-- Maybe 는 monad 이므로 -: 이거를 >>= 으로 바꾸자
+-- main = print $ return (freeTree, []) >>= goRight'' >>= goRight''
+
+-- 5 번부터는 empty
+main = print $ foldr (\x acc -> acc >>= x) (return (freeTree, [])) (replicate 5 goRight'')
